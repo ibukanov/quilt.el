@@ -34,12 +34,16 @@
 
 (defun quilt-owned-p (fn)
   "check if the current buffer is quilt controlled"
-  (if (not fn)
+  (if (or
+       (not fn)
+       ;; For remote files running quilt is not supported and doing
+       ;; the directory search on them can hang Tramp.
+       (file-remote-p fn)
+       (string-match "\\(~$\\|\\.rej$\\)" fn))
       nil
     (let* ((pd (file-name-nondirectory 
 		(directory-file-name (file-name-directory fn)))))
-      (and 
-       (not (string-match "\\(~$\\|\\.rej$\\)" fn))
+      (and
        (not (equal pd "patches"))
        (not (equal pd ".pc"))
        (quilt-p fn)))))
