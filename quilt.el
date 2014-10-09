@@ -77,13 +77,8 @@
 	nil
 	(substring top 0 -1))))
 
-(defun quilt-complete-list (p l)
-  (defun to-alist (list n)
-    (if list
-	(cons (cons (car list) n)
-	      (to-alist (cdr list) (+ 1 n)))
-      nil))
-  (completing-read p (to-alist l 0) nil t))
+(defun quilt-complete-list (p list)
+  (completing-read p list nil t))
 
 (defun quilt-editable (f)
   (let* ((qd (quilt-dir))
