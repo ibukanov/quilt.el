@@ -63,13 +63,13 @@
       (cd d) r)))
 
 (defun quilt-applied-list ()
-  (split-string (quilt-cmd-to-string "applied") "\n"))
+  (split-string (quilt-cmd-to-string "applied") "\n" t))
 
 (defun quilt-file-list ()
-  (split-string (quilt-cmd-to-string "files") "\n"))
+  (split-string (quilt-cmd-to-string "files") "\n" t))
 
 (defun quilt-patch-list ()
-  (split-string (quilt-cmd-to-string "series") "\n"))
+  (split-string (quilt-cmd-to-string "series") "\n" t))
 
 (defun quilt-top-patch ()
   (let* ((top (quilt-cmd-to-string "top")))
