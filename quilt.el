@@ -11,12 +11,15 @@
 
 (defun quilt-find-dir (fn)
   "find the top level dir for quilt from fn"
-  (let* ((d (file-name-directory fn)))
-    (if (or (not fn) (equal fn "/"))
-	nil
-      (if (file-accessible-directory-p (concat d "/.pc"))
-	  d
-	(quilt-find-dir (directory-file-name d))))))
+  (if (not fn)
+      nil
+    (let ((found-dir nil))
+      (while (not (or found-dir (equal fn "/")))
+	(let ((d (file-name-directory fn)))
+	  (if (file-accessible-directory-p (concat d "/.pc"))
+	      (setq found-dir d)
+	    (setq fn (directory-file-name d)))))
+      found-dir)))
 
 (defun quilt-dir (&optional fn)
   (quilt-find-dir (if fn fn buffer-file-name)))
@@ -81,17 +84,16 @@
   (completing-read p list nil t))
 
 (defun quilt-editable (f)
-  (let* ((qd (quilt-dir))
-	 (fn (quilt-drop-dir f)))
-    (defun editable (file dirs)
-      (if (car dirs)
-	  (if (file-exists-p (concat qd ".pc/" (car dirs) "/" file))
-	      't
-	    (editable file (cdr dirs)))
-	nil))
-    (editable fn (if quilt-edit-top-only
-		     (list (quilt-top-patch))
-		     (cdr (cdr (directory-files (concat qd ".pc/"))))))))
+  (let* ((pcdir (concat (quilt-dir) ".pc/"))
+	 (file (quilt-drop-dir f))
+	 (dirs (if quilt-edit-top-only
+		   (list (quilt-top-patch))
+		 (cdr (cdr (directory-files pcdir)))))
+	 (editable nil))
+    (while (and (not editable) dirs)
+      (setq editable (file-exists-p (concat pcdir (car dirs) "/" file)))
+      (setq dirs (cdr dirs)))
+    editable))
 
 (defun quilt-short-patchname ()
   (let* ((p (quilt-top-patch)))
@@ -111,20 +113,17 @@
   (force-mode-line-update))
 
 (defun quilt-revert ()
-  (defun revert (buf)
-    (save-excursion
-      (set-buffer buf)
-      (if (quilt-owned-p buffer-file-name)
-	  (quilt-update-modeline))
-      (if (and (quilt-owned-p buffer-file-name)
-	       (not (buffer-modified-p)))
-	  (revert-buffer 't 't))))
-  (defun revert-list (buffers)
-    (if (not (cdr buffers))
-	nil
-      (revert (car buffers))
-      (revert-list (cdr buffers))))
-  (revert-list (buffer-list)))
+  (let ((buffers (buffer-list)))
+    (while buffers
+      (let* ((buf (car buffers)) 
+	     (file-name (buffer-file-name buf)))
+	(when (quilt-owned-p file-name)
+	  (save-excursion
+	    (set-buffer buf)
+	    (quilt-update-modeline)
+	    (when (not (buffer-modified-p))
+	      (revert-buffer 't 't)))))
+      (setq buffers (cdr buffers)))))
 
 (defun quilt-push (arg)
   "Push next patch, force with prefix arg"
