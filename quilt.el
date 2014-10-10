@@ -9,6 +9,9 @@
 ;;;
 ;;; Usage: add (load "~/quilt.el") to your .emacs file
 
+(defconst quilt--details-buf "*quilt*")
+(defconst quilt--diff-buf "*diff*")
+
 (defun quilt-find-dir (fn)
   "find the top level dir for quilt from fn"
   (if (not fn)
@@ -51,12 +54,16 @@
        (not (equal pd ".pc"))
        (quilt-p fn)))))
 
-(defun quilt-cmd (cmd &optional buf)
+(defun quilt-cmd (cmd &optional buf-name)
   "execute a quilt command at the top of the quilt tree for the given buffer"
-  (let* ((d default-directory))
+  (let* ((d default-directory)
+	 (buf (if buf-name (get-buffer-create buf-name) nil)))
     (cd (quilt-dir))
     (shell-command (concat "quilt " cmd) buf)
-    (cd d)))
+    (cd d)
+    (when (and (string-equal buf-name quilt--diff-buf)
+	       (fboundp 'diff-mode))
+      (with-current-buffer buf (diff-mode)))))
 
 (defun quilt-cmd-to-string (cmd)
   "execute a quilt command at the top of the quilt tree for the given buffer"
@@ -130,7 +137,7 @@
   (interactive "p")
   (quilt-save)
   (if (> arg 1)
-      (quilt-cmd "push -f" "*quilt*")
+      (quilt-cmd "push -f" quilt--details-buf)
     (quilt-cmd "push -q"))
   (quilt-revert))
 
@@ -148,7 +155,7 @@
   (interactive "p")
   (quilt-save)
   (if (> arg 1)
-      (quilt-cmd "push -f" "*quilt*")
+      (quilt-cmd "push -f" quilt--details-buf)
     (quilt-cmd "push -qa"))
   (quilt-revert))
 
@@ -167,8 +174,8 @@
   (let* ((arg (quilt-complete-list "Goto patch: " (quilt-patch-list))))
        (quilt-save)
        (if (file-exists-p (concat (quilt-dir) ".pc/" arg))
-	   (quilt-cmd (concat "pop -q " arg) "*quilt*")
-	 (quilt-cmd (concat "push -q " arg) "*quilt*")))
+	   (quilt-cmd (concat "pop -q " arg) quilt--details-buf)
+	 (quilt-cmd (concat "push -q " arg) quilt--details-buf)))
   (quilt-revert))
 
 (defun quilt-top ()
@@ -196,7 +203,7 @@
   "Display diff of current changes"
   (interactive)
   (quilt-save)
-  (quilt-cmd "diff" "*diff*"))
+  (quilt-cmd "diff" quilt--diff-buf))
 
 (defun quilt-new (f)
   "Create a new patch"
@@ -208,7 +215,7 @@
 (defun quilt-applied ()
   "Show applied patches"
   (interactive)
-  (quilt-cmd "applied" "*quilt*"))
+  (quilt-cmd "applied" quilt--details-buf))
 
 (defun quilt-add (arg)
   "Add a file to the current patch"
@@ -230,7 +237,7 @@
 (defun quilt-unapplied ()
   "Display unapplied patch list"
   (interactive)
-  (quilt-cmd "unapplied" "*quilt*"))
+  (quilt-cmd "unapplied" quilt--details-buf))
 
 (defun quilt-refresh ()
   "Refresh the current patch"
