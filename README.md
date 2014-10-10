@@ -6,4 +6,4 @@ Emacs minor mode for working with files in <a href='http://en.wikipedia.org/wiki
 Installation
 ------------
 
-Copy quilt.el to a directory on the Emacs load path and add `(require quilt)` to your .emacs file. Alternatively add `(load "~/quilt.el")` to .emacs with the path adjusted apropriately.
+Copy quilt.el to a directory on the Emacs load path and add `(require 'quilt)` to your .emacs file. Alternatively add `(load "~/quilt.el")` to .emacs with the path adjusted apropriately.
